@@ -13,12 +13,15 @@ class CSVReader:
                 yield row
         file.close()
 
-    def read_entities(self, attr, builder, after_create=None):
+    def read_entities(self, attrs: list, builder, after_create=None):
         entities = {}
         for row in self.loop():
-            e = row[attr]
+            e = tuple(row[attr] for attr in attrs)
             if e not in entities:
                 entities[e] = builder(row)
-                after_create is not None and after_create(entities[e], row)
-
+                if after_create is not None:
+                    if e in entities:
+                        after_create(entities[e], row)
+                    else:
+                        print(f"Key {e} does not exist in the dictionary.")
         return entities
