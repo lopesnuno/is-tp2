@@ -1,50 +1,49 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS POSTGIS;
-CREATE EXTENSION IF NOT EXISTS POSTGIS_TOPOLOGY;
-
-CREATE TABLE public.teams (
-	id              uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-	name            VARCHAR(250) NOT NULL,
-	created_on      TIMESTAMP NOT NULL DEFAULT NOW(),
-	updated_on      TIMESTAMP NOT NULL DEFAULT NOW()
+CREATE TABLE teams
+(
+    id           INTEGER PRIMARY KEY,
+    abbreviation VARCHAR(4) NOT NULL
 );
 
-CREATE TABLE public.countries (
-	id              uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-	name            VARCHAR(250) UNIQUE NOT NULL,
-	geom            GEOMETRY,
-	created_on      TIMESTAMP NOT NULL DEFAULT NOW(),
-	updated_on      TIMESTAMP NOT NULL DEFAULT NOW()
+CREATE TABLE countries
+(
+    id   INTEGER PRIMARY KEY,
+    name VARCHAR(100) NOT NULL
 );
 
-CREATE TABLE public.players (
-	id              uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-	name            VARCHAR(250) NOT NULL,
-	age             INT NOT NULL,
-	team_id         uuid,
-	country_id      uuid NOT NULL,
-	created_on      TIMESTAMP NOT NULL DEFAULT NOW(),
-	updated_on      TIMESTAMP NOT NULL DEFAULT NOW()
+CREATE TABLE colleges
+(
+    id   INTEGER PRIMARY KEY,
+    name VARCHAR(100) NOT NULL
 );
 
-ALTER TABLE players
-    ADD CONSTRAINT players_countries_id_fk
-        FOREIGN KEY (country_id) REFERENCES countries
-            ON DELETE CASCADE;
-
-ALTER TABLE players
-    ADD CONSTRAINT players_teams_id_fk
-        FOREIGN KEY (team_id) REFERENCES teams
-            ON DELETE SET NULL;
-
-/* Sample table and data that we can insert once the database is created for the first time */
-CREATE TABLE public.teachers (
-	name    VARCHAR (100),
-	city    VARCHAR(100),
-	created_on      TIMESTAMP NOT NULL DEFAULT NOW(),
-	updated_on      TIMESTAMP NOT NULL DEFAULT NOW()
+CREATE TABLE players
+(
+    id           INTEGER PRIMARY KEY,
+    name         VARCHAR(100)                      NOT NULL,
+    age          INTEGER                           NOT NULL,
+    height       FLOAT                             NOT NULL,
+    weight       FLOAT                             NOT NULL,
+    draft_year   INT                               NOT NULL,
+    draft_round  INT                               NOT NULL,
+    draft_number INT                               NOT NULL,
+    college_ref  INTEGER REFERENCES colleges (id),
+    country_ref  INTEGER REFERENCES countries (id) NOT NULL
 );
 
-INSERT INTO teachers(name, city) VALUES('Luís Teófilo', 'Porto');
-INSERT INTO teachers(name, city) VALUES('Ricardo Castro', 'Braga');
-
+CREATE TABLE entries
+(
+    id         INTEGER PRIMARY KEY,
+    season     VARCHAR(8)                      NOT NULL,
+    gp         INTEGER                         NOT NULL,
+    pts        FLOAT                           NOT NULL,
+    reb        FLOAT                           NOT NULL,
+    ast        FLOAT                           NOT NULL,
+    net_rating FLOAT                           NOT NULL,
+    oreb_pct   FLOAT                           NOT NULL,
+    dreb_pct   FLOAT                           NOT NULL,
+    usg_pct    FLOAT                           NOT NULL,
+    ts_pct     FLOAT                           NOT NULL,
+    ast_pct    FLOAT                           NOT NULL,
+    player_ref INTEGER REFERENCES players (id) NOT NULL,
+    team_ref   INTEGER REFERENCES teams (id)   NOT NULL
+);

@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="NBA">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Season" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Player" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="name" type="xs:string"/>
+                    <xs:element name="age" type="xs:integer"/>
+                    <xs:element name="country_ref" type="xs:string"/>
+                    <xs:element name="height" type="xs:float"/>
+                    <xs:element name="weight" type="xs:float"/>
+                    <xs:element name="draft_year" type="xs:string"/>
+                    <xs:element name="draft_round" type="xs:string"/>
+                    <xs:element name="draft_number" type="xs:string"/>
+                  </xs:sequence>
+                  <xs:attribute name="id" type="xs:integer" use="required"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="season" type="xs:string" use="required"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
+
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:element name="NBA">
+    <xs:complexType>
+      <xs:sequence>
+
+
+        <xs:element name="Players">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Player">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="name" type="xs:string"/>
+                    <xs:element name="age" type="xs:integer"/>
+                    <xs:element name="height" type="xs:float"/>
+                    <xs:element name="weight" type="xs:float"/>
+                    <xs:element name="draft_year" type="xs:string"/>
+                    <xs:element name="draft_round" type="xs:string"/>
+                    <xs:element name="draft_number" type="xs:string"/>
+                  </xs:sequence>
+                  <xs:attribute name="id" type="xs:integer" use="required"/>
+                  <xs:attribute name="college_id" type="xs:integer"/>
+                  <xs:attribute name="country_ref" type="xs:integer" use="required"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+        <xs:element name="Teams">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Team">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="abbreviation" type="xs:string"/>
+                  </xs:sequence>
+                  <xs:attribute name="id" type="xs:integer" use="required"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+        <xs:element name="Countries">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Country">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="name" type="xs:string"/>
+                  </xs:sequence>
+                  <xs:attribute name="id" type="xs:integer" use="required"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+        <!-- Colleges entity -->
+        <xs:element name="Colleges">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="College">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="name" type="xs:string"/>
+                  </xs:sequence>
+                  <xs:attribute name="id" type="xs:integer" use="required"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+        <!-- Stats entity -->
+        <xs:element name="Stats">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Stats">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="gp" type="xs:integer"/>
+                    <xs:element name="pts" type="xs:float"/>
+                    <xs:element name="reb" type="xs:float"/>
+                    <xs:element name="ast" type="xs:float"/>
+                    <xs:element name="net_rating" type="xs:float"/>
+                    <xs:element name="oreb_pct" type="xs:float"/>
+                    <xs:element name="dreb_pct" type="xs:float"/>
+                    <xs:element name="usg_pct" type="xs:float"/>
+                    <xs:element name="ts_pct" type="xs:float"/>
+                    <xs:element name="ast_pct" type="xs:float"/>
+                  </xs:sequence>
+                  <xs:attribute name="id" type="xs:integer" use="required"/>
+                  <xs:attribute name="player_id" type="xs:integer" use="required"/>
+                  <xs:attribute name="team_id" type="xs:integer" use="required"/>
+                  <xs:attribute name="season" type="xs:string" use="required"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+        <xs:element name="Seasons">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="season">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="season_name" type="xs:string"/>
+                  </xs:sequence>
+                  <xs:attribute name="id" type="xs:integer" use="required"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>
