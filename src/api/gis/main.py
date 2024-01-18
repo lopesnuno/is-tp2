@@ -1,5 +1,4 @@
 import sys
-
 from flask import Flask, request
 
 PORT = int(sys.argv[1]) if len(sys.argv) >= 2 else 9000
