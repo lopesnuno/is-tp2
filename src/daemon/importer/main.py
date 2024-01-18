@@ -1,11 +1,10 @@
 import asyncio
 import time
 import uuid
-
 import os
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileCreatedEvent
-
+from utils.database import storeFile_imported_documents, storeFile_converted_documents, get_db_converted_files
 from utils.to_xml_converter import CSVtoXMLConverter
 
 
@@ -39,23 +38,20 @@ class CSVHandler(FileSystemEventHandler):
         # here we avoid converting the same file again
         # !TODO: check converted files in the database
         if csv_path in await self.get_converted_files():
-            return
+            return "File already converted."
 
         print(f"new file to convert: '{csv_path}'")
 
-        # we generate a unique file name for the XML file
         xml_path = generate_unique_file_name(self._output_path)
 
-        # we do the conversion
-        # !TODO: once the conversion is done, we should updated the converted_documents tables
         convert_csv_to_xml(csv_path, xml_path)
+        storeFile_converted_documents(csv_path, xml_path)
         print(f"new xml file generated: '{xml_path}'")
-
         # !TODO: we should store the XML document into the imported_documents table
+        storeFile_imported_documents(file_path=xml_path)
 
     async def get_converted_files(self):
-        # !TODO: you should retrieve from the database the files that were already converted before
-        return []
+        return get_db_converted_files()
 
     def on_created(self, event):
         if not event.is_directory and event.src_path.endswith(".csv"):

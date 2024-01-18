@@ -1,11 +1,13 @@
 import csv
+import os
 import xml.dom.minidom as md
 import xml.etree.ElementTree as ET
-
 from utils.reader import CSVReader
 from entities.country import Country
 from entities.team import Team
 from entities.player import Player
+from entities.stats import Stats
+from entities.college import College
 
 
 class CSVtoXMLConverter:
@@ -49,6 +51,14 @@ class CSVtoXMLConverter:
             )
         )
 
+        colleges = self._reader.read_entities(
+            attrs=["college"],
+            builder=lambda row: College(
+                name=row["college"]
+            )
+        )
+
+
         root_el = ET.Element("NBA")
 
         players_by_season = {}
@@ -65,7 +75,6 @@ class CSVtoXMLConverter:
             for player in season_players:
                 player_el = ET.Element("Player")
                 player_el.set('id', str(player.get_id()))
-                player_el.set('name', str(player._name))
 
                 ET.SubElement(player_el, "name").text = player._name
                 ET.SubElement(player_el, 'country').text = player.get_country()
@@ -74,9 +83,15 @@ class CSVtoXMLConverter:
                 ET.SubElement(player_el, "weight").text = str(player._weight)
                 ET.SubElement(player_el, "draft_year").text = player._draft_year
                 ET.SubElement(player_el, "draft_round").text = player._draft_round
-                ET.SubElement(player_el, 'college').text = player.get_college()
                 ET.SubElement(player_el, "draft_number").text = player._draft_number
                 ET.SubElement(player_el, "season").text = player.get_season()
+
+                for college in colleges.values():
+                    if college._name == player._college:
+                        college_el = ET.Element("College")
+                        college_el.set('id', str(college.get_id()))
+                        ET.SubElement(college_el, "name").text = college._name
+                        player_el.append(college_el)
 
                 for stat in stats.values():
                     if stat._player == player._name:
@@ -97,25 +112,16 @@ class CSVtoXMLConverter:
 
                 season_el.append(player_el)
 
-        assert len(root_el) == len(players_by_season), "Extra content found after root element"
-
         return root_el
 
     def to_xml_str(self):
         root_el = self.to_xml()
-
         try:
             # Convert the XML element to a string
             xml_str = ET.tostring(root_el, encoding='utf8', method='xml').decode()
             dom = md.parseString(xml_str)
             pretty_xml_str = dom.toprettyxml()
-
-            # Save as a file
-            file_path = os.path.join('/data', 'allSeasons.xml')
-            with open(file_path, 'w', encoding='utf-8') as file:
-                file.write(pretty_xml_str)
-
-            print("File 'allSeasons.xml' created successfully!")
+            print("File created successfully!")
             return pretty_xml_str
         except Exception as e:
             print(f"Failed to create file: {e}")
