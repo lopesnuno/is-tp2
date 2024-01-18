@@ -9,9 +9,12 @@ CREATE TABLE public.teams (
 	updated_on      TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE public.college (
+CREATE TABLE public.colleges (
 	id              uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
 	name            VARCHAR(250) NOT NULL,
+    latitude        DOUBLE PRECISION,
+    longitude       DOUBLE PRECISION,
+    geom            GEOMETRY(Point, 4326),
 	created_on      TIMESTAMP NOT NULL DEFAULT NOW(),
 	updated_on      TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -19,7 +22,6 @@ CREATE TABLE public.college (
 CREATE TABLE public.countries (
 	id              uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
 	name            VARCHAR(250) UNIQUE NOT NULL,
-	geom            GEOMETRY,
 	created_on      TIMESTAMP NOT NULL DEFAULT NOW(),
 	updated_on      TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -43,18 +45,18 @@ CREATE TABLE public.draft (
     round           INT NOT NULL,
     number          INT NOT NULL,
     player_id       uuid NOT NULL
-)
+);
 
 CREATE TABLE public.seasons (
     id              uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    year            varchar(50) NOT NULL UNIQUE,
-)
+    year            varchar(50) NOT NULL UNIQUE
+);
 
 CREATE TABLE public.season_player (
     id              uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     season_id          uuid NOT NULL,
     player_id          uuid NOT NULL
-)
+);
 
 CREATE TABLE public.stats (
     id              uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -68,8 +70,8 @@ CREATE TABLE public.stats (
     dreb_pct        FLOAT,
     usg_pct         FLOAT,
     ts_pct          FLOAT,
-    ast_pct         FLOAT,
-)
+    ast_pct         FLOAT
+);
 
 
 ALTER TABLE players
@@ -98,7 +100,7 @@ ALTER TABLE season_player
             ON DELETE SET NULL;
 
 ALTER TABLE season_player
-    ADD CONSTRAINT season_player_fk
+    ADD CONSTRAINT season_player_season_fk
         FOREIGN KEY (season_id) REFERENCES seasons
             ON DELETE SET NULL;
 
