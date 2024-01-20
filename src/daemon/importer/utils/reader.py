@@ -1,5 +1,5 @@
-from csv import DictReader
-
+from csv import DictReader, DictWriter
+import os
 
 class CSVReader:
 
@@ -25,3 +25,25 @@ class CSVReader:
                     else:
                         print(f"Key {e} does not exist in the dictionary.")
         return entities
+
+    def split_files(self, output_prefix):
+        output_dir = '/csv'
+        file_handles = [open(os.path.join(output_dir, f"{output_prefix}_{i}.csv"), 'w', newline='') for i in range(4)]
+        writers = [DictWriter(file_handle, fieldnames=self.get_fieldnames()) for file_handle in file_handles]
+
+        for writer in writers:
+            writer.writeheader()
+
+        for i, row in enumerate(self.loop()):
+            file_index = i % 4
+            writers[file_index].writerow(row)
+
+        for file_handle in file_handles:
+            file_handle.close()
+
+    def get_fieldnames(self):
+        with open(self._path, 'r') as file:
+            reader = DictReader(file, delimiter=self._delimiter)
+            fieldnames = reader.fieldnames
+
+        return fieldnames

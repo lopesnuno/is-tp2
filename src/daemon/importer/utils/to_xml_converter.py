@@ -74,7 +74,6 @@ class CSVtoXMLConverter:
 
             for player in season_players:
                 player_el = ET.Element("Player")
-                player_el.set('id', str(player.get_id()))
 
                 ET.SubElement(player_el, "name").text = player._name
                 ET.SubElement(player_el, 'country').text = player.get_country()

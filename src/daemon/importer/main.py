@@ -6,6 +6,8 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileCreatedEvent
 from utils.database import storeFile_imported_documents, storeFile_converted_documents, get_db_converted_files
 from utils.to_xml_converter import CSVtoXMLConverter
+from utils.reader import CSVReader
+import csv
 
 
 def get_csv_files_in_input_folder():
@@ -34,7 +36,7 @@ class CSVHandler(FileSystemEventHandler):
             event.event_type = "created"
             self.dispatch(event)
 
-    async def convert_csv(self, csv_path):
+    async def convert_csv(self, csv_path, chunk_size=4000):
         # here we avoid converting the same file again
         # !TODO: check converted files in the database
         if csv_path in await self.get_converted_files():
@@ -42,13 +44,20 @@ class CSVHandler(FileSystemEventHandler):
 
         print(f"new file to convert: '{csv_path}'")
 
-        xml_path = generate_unique_file_name(self._output_path)
+        reader = CSVReader(csv_path)
+        reader.split_files('out_split')
 
-        convert_csv_to_xml(csv_path, xml_path)
-        storeFile_converted_documents(csv_path, xml_path)
-        print(f"new xml file generated: '{xml_path}'")
-        # !TODO: we should store the XML document into the imported_documents table
-        storeFile_imported_documents(file_path=xml_path)
+        for i in range(4):
+            split_csv_path = os.path.join('/csv', f'out_split_{i}.csv')
+            if os.path.exists(split_csv_path):
+                xml_path = generate_unique_file_name(self._output_path)
+
+                convert_csv_to_xml(split_csv_path, xml_path)
+
+                storeFile_converted_documents(split_csv_path, xml_path)
+                print(f"new xml file generated: '{xml_path}'")
+                storeFile_imported_documents(file_path=xml_path)
+
 
     async def get_converted_files(self):
         return get_db_converted_files()
