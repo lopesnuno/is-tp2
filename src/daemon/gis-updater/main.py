@@ -10,6 +10,7 @@ XML_PATH = "/xml"
 
 geolocator = Nominatim(user_agent="is-tp2")
 
+
 def get_colleges(xml_path, max_iterations):
     college_names = set()
 
@@ -47,5 +48,7 @@ if __name__ == "__main__":
             geo = get_coordinates_by_college_name(college)
             print(college, ' -> ', geo)
         # !TODO: 3- Submit the changes
+
+        #update ja na base de dados relacional
 
 
