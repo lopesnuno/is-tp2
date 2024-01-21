@@ -1,36 +1,46 @@
-import signal, sys
-from xmlrpc.server import SimpleXMLRPCServer
-from xmlrpc.server import SimpleXMLRPCRequestHandler
+import signal
+import sys
+import logging
+from xmlrpc.server import SimpleXMLRPCRequestHandler, SimpleXMLRPCServer
+from functions.queries import get_highest_scoring_season_by_player, get_players_with_tripleDoubleSeasons, \
+    get_top5_colleges
 
-from functions.string_length import string_length
-from functions.string_reverse import string_reverse
+logging.basicConfig(level=logging.INFO)
 
-PORT = int(sys.argv[1]) if len(sys.argv) >= 2 else 9000
+def hello():
+    return "Hello"
 
-if __name__ == "__main__":
-    class RequestHandler(SimpleXMLRPCRequestHandler):
-        rpc_paths = ('/RPC2',)
+class RequestHandler(SimpleXMLRPCRequestHandler):
+    rpc_paths = ('/RPC2',)
 
-    with SimpleXMLRPCServer(('localhost', PORT), requestHandler=RequestHandler) as server:
-        server.register_introspection_functions()
+    def log_request(self, code='-', size='-'):
+        logging.info(f"Request received: {self.requestline}")
 
-        def signal_handler(signum, frame):
-            print("received signal")
-            server.server_close()
 
-            # perform clean up, etc. here...
-            print("exiting, gracefully")
-            sys.exit(0)
+with SimpleXMLRPCServer(('0.0.0.0', 9000), requestHandler=RequestHandler, allow_none=True) as server:
+    server.register_introspection_functions()
+    server.allow_none = True
 
-        # signals
-        signal.signal(signal.SIGTERM, signal_handler)
-        signal.signal(signal.SIGHUP, signal_handler)
-        signal.signal(signal.SIGINT, signal_handler)
+    def signal_handler(signum, frame):
+        logging.info("Received signal")
+        server.server_close()
 
-        # register both functions
-        server.register_function(string_reverse)
-        server.register_function(string_length)
+        # Perform clean up, etc. here...
 
-        # start the server
-        print(f"Starting the RPC Server in port {PORT}...")
-        server.serve_forever()
+        logging.info("Exiting, gracefully")
+        sys.exit(0)
+
+    # Signals
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGHUP, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+
+    # Register functions
+    server.register_function(get_highest_scoring_season_by_player)
+    server.register_function(get_players_with_tripleDoubleSeasons)
+    server.register_function(get_top5_colleges)
+    server.register_function(hello)
+
+    # Start the server
+    logging.info("Starting the RPC Server...")
+    server.serve_forever()

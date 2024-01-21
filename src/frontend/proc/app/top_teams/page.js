@@ -2,25 +2,6 @@
 import React, {useEffect, useState} from "react";
 import {Box, CircularProgress, Container, FormControl, InputLabel, MenuItem, Select} from "@mui/material";
 
-const DEMO_TEAMS = [
-    {"team": "Manchester United", country: "UK"},
-    {"team": "Manchester City", country: "UK"},
-    {"team": "Chelsea", country: "UK"},
-    {"team": "Tottenham", country: "UK"},
-    {"team": "Fulham", country: "UK"},
-
-    {"team": "Sporting", country: "Portugal"},
-    {"team": "Porto", country: "Portugal"},
-    {"team": "Benfica", country: "Portugal"},
-    {"team": "Braga", country: "Portugal"},
-
-    {"team": "PSG", country: "France"},
-    {"team": "Lyon", country: "France"},
-    {"team": "Olympique de Marseille", country: "France"}
-];
-
-const COUNTRIES = [...new Set(DEMO_TEAMS.map(team => team.country))];
-
 
 function TopTeams() {
 
@@ -30,10 +11,11 @@ function TopTeams() {
     const [gqlData, setGQLData] = useState(null);
 
     useEffect(() => {
-        //!FIXME: this is to simulate how to retrieve data from the server
-        //!FIXME: the entities server URL is available on process.env.REACT_APP_API_ENTITIES_URL
+
         setProcData(null);
         setGQLData(null);
+
+
 
         if (selectedCountry) {
             setTimeout(() => {

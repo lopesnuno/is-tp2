@@ -1,8 +1,9 @@
 import HomeIcon from "@mui/icons-material/Home";
-import {People} from "@mui/icons-material";
+import {People, School} from "@mui/icons-material";
 
 const LINKS = [
     {text: 'Home', href: '/', icon: HomeIcon},
-    {text: 'Top Teams', href: '/top_teams', icon: People }
+    {text: 'Triple Double Players', href: '/tripleDoublePlayers', icon: People },
+    {text: 'Top 5 Colleges', href: '/top5_colleges', icon: School },
 ];
 export default LINKS;

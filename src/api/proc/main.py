@@ -1,24 +1,63 @@
-import sys
-
-from flask import Flask
-
-PORT = int(sys.argv[1]) if len(sys.argv) >= 2 else 9000
+import json
+import os.path
+from flask_cors import CORS, cross_origin
+from flask import Flask, jsonify
+import xmlrpc.client
+import traceback
+import time
 
 app = Flask(__name__)
-app.config["DEBUG"] = True
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
 
 
-@app.route('/api/best_players', methods=['GET'])
-def get_best_players():
-    return [{
-        "id": "7674fe6a-6c8d-47b3-9a1f-18637771e23b",
-        "name": "Ronaldo",
-        "country": "Portugal",
-        "position": "Striker",
-        "imgUrl": "https://cdn-icons-png.flaticon.com/512/805/805401.png",
-        "number": 7
-    }]
+def connect_to_server(retry_attempts=5, delay_seconds=2):
+    for attempt in range(1, retry_attempts + 1):
+        try:
+            print(f"Connecting to the server (Attempt {attempt}/{retry_attempts})...")
+            server = xmlrpc.client.ServerProxy('http://rpc-server:9000/RPC2')
+            print("Connection successful.")
+            return server
+        except ConnectionError as ce:
+            print(f"Error: Unable to connect to the server. {ce}")
+        except Exception as e:
+            print(f"Error: An unexpected error occurred. {e}")
+
+        if attempt < retry_attempts:
+            print(f"Retrying in {delay_seconds} seconds...")
+            time.sleep(delay_seconds)
+
+    raise ConnectionError(f"Failed to connect after {retry_attempts} attempts. Please check the connection.")
+
+
+server = connect_to_server()
+
+
+@app.route('/api/triple_double_players', methods=['GET'])
+@cross_origin()
+def api_get_triple_double_players():
+    try:
+        result = server.get_players_with_tripleDoubleSeasons()
+        data = json.loads(result)
+        return jsonify(data)
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({"error": f"Failed to fetch data from RPC server: {str(e)}"}), 500
+
+
+@app.route('/api/top5_colleges', methods=['GET'])
+@cross_origin()
+def api_get_top5_colleges():
+    try:
+        result = server.get_top5_colleges()
+        data = json.loads(result)
+        return json.dumps(data, indent=2)
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        traceback.print_exc()  # Add this line to print the traceback
+        return jsonify({"error": f"Failed to fetch data from RPC server: {str(e)}"}), 500
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=PORT)
+    print("Starting Flask app...")
+    app.run(host="0.0.0.0", port=8080)

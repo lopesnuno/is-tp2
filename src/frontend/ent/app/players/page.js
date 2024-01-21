@@ -62,18 +62,28 @@ export default function PlayersPage({pagea}) {
         [searchParams]
     );
     const [data, setData] = useState(null);
-    const [maxDataSize, setMaxDataSize] = useState(DEMO_PLAYERS.length);
-
+    const [players, setPlayers] = useState(null)
+    const [maxDataSize, setMaxDataSize] = useState(null);
     const page = parseInt(searchParams.get('page')) || 1;
     const PAGE_SIZE = 10;
 
+
     useEffect(() => {
-        //!FIXME: this is to simulate how to retrieve data from the server
-        //!FIXME: the entities server URL is available on process.env.REACT_APP_API_ENTITIES_URL
-        setData(null);
+        const fetchData = async () => {
+            const response = await fetch(`http://localhost:20001/players`);
+            const data = await response.json();
+            setData(data);
+            setMaxDataSize(data.length);
+        };
+
+        fetchData();
+    }, []);
+
+
+    useEffect(() => {
+        setPlayers(null);
         setTimeout(() => {
-            console.log(`fetching from ${process.env.NEXT_PUBLIC_API_ENTITIES_URL}`)
-            setData(DEMO_PLAYERS.filter((item, index) => Math.floor(index / PAGE_SIZE) === (page - 1)));
+            setPlayers(data.filter((item, index) => Math.floor(index / PAGE_SIZE) === (page - 1)));
         }, 500);
     }, [page])
 
@@ -85,24 +95,42 @@ export default function PlayersPage({pagea}) {
                 <Table sx={{minWidth: 650}} aria-label="simple table">
                     <TableHead>
                         <TableRow sx={{backgroundColor: "lightgray"}}>
-                            <TableCell component="th" width={"1px"} align="center">ID</TableCell>
-                            <TableCell>Player Name</TableCell>
-                            <TableCell align="center">Age</TableCell>
+                            <TableCell>Name</TableCell>
+                            <TableCell align="center">Country</TableCell>
+                            <TableCell align="center">Height</TableCell>
+                            <TableCell align="center">Weight</TableCell>
+                            <TableCell align="center">Draft Year</TableCell>
+                            <TableCell align="center">Draft Round</TableCell>
+                            <TableCell align="center">Draft Number</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {
-                            data ?
-                                data.map((row) => (
+                            players ?
+                                players.map((row) => (
                                     <TableRow
                                         key={row.id}
                                     >
-                                        <TableCell component="td" align="center">{row.id}</TableCell>
                                         <TableCell component="td" scope="row">
                                             {row.name}
                                         </TableCell>
                                         <TableCell component="td" align="center" scope="row">
-                                            {row.age}
+                                            {row.country}
+                                        </TableCell>
+                                        <TableCell component="td" align="center" scope="row">
+                                            {row.height}
+                                        </TableCell>
+                                        <TableCell component="td" align="center" scope="row">
+                                            {row.weight}
+                                        </TableCell>
+                                        <TableCell component="td" align="center" scope="row">
+                                            {row.draft_year}
+                                        </TableCell>
+                                        <TableCell component="td" align="center" scope="row">
+                                            {row.draft_round}
+                                        </TableCell>
+                                        <TableCell component="td" align="center" scope="row">
+                                            {row.draft_number}
                                         </TableCell>
                                     </TableRow>
                                 ))

@@ -165,6 +165,7 @@ services:
     environment:
       API_PORT: ${API_PORT}
 
+
   # Container that runs the API for graphql
   api-graphql:
     container_name: api-graphql

@@ -15,14 +15,13 @@ CREATE TABLE public.colleges (
 CREATE TABLE public.players (
 	id              uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
 	name            VARCHAR(250) NOT NULL,
-	age             INT NOT NULL,
 	country         VARCHAR(250),
     college_id      uuid,
     height          INT NOT NULL,
     weight          INT NOT NULL,
-    draft_year      INT,
-    draft_round     INT,
-    draft_number    INT,
+    draft_year      VARCHAR(50),
+    draft_round     VARCHAR(50),
+    draft_number    VARCHAR(50),
 	created_on      TIMESTAMP NOT NULL DEFAULT NOW(),
 	updated_on      TIMESTAMP NOT NULL DEFAULT NOW()
 );

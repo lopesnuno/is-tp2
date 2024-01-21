@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,12 +7,67 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Teacher {
-  name       String   @id
-  city       String
-  createdOn  DateTime @default(now()) @map("created_on")
-  updatedOn  DateTime @updatedAt @map("updated_on")
-
-  @@map("teachers")
+model colleges {
+  id         String                   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name       String                   @db.VarChar(250)
+  latitude   Float?
+  longitude  Float?
+  geom       Unsupported("geometry")?
+  created_on DateTime                 @default(now()) @db.Timestamp(6)
+  updated_on DateTime                 @default(now()) @db.Timestamp(6)
+  players    players[]
 }
 
+model players {
+  id            String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name          String          @db.VarChar(250)
+  country       String?         @db.VarChar(250)
+  college_id    String?         @db.Uuid
+  height        Int
+  weight        Int
+  draft_year    String?         @db.VarChar(50)
+  draft_round   String?         @db.VarChar(50)
+  draft_number  String?         @db.VarChar(50)
+  created_on    DateTime        @default(now()) @db.Timestamp(6)
+  updated_on    DateTime        @default(now()) @db.Timestamp(6)
+  colleges      colleges?       @relation(fields: [college_id], references: [id], onUpdate: NoAction, map: "players_college_id_fk")
+  season_player season_player[]
+}
+
+model season_player {
+  id        String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  season_id String  @db.Uuid
+  player_id String  @db.Uuid
+  players   players @relation(fields: [player_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "season_player_fk")
+  seasons   seasons @relation(fields: [season_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "season_player_season_fk")
+}
+
+model seasons {
+  id            String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  year          String          @unique @db.VarChar(50)
+  season_player season_player[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model spatial_ref_sys {
+  srid      Int     @id
+  auth_name String? @db.VarChar(256)
+  auth_srid Int?
+  srtext    String? @db.VarChar(2048)
+  proj4text String? @db.VarChar(2048)
+}
+
+model stats {
+  id            String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  season_player String        @db.Uuid
+  gp            Float?
+  pts           Float?
+  reb           Float?
+  ast           Float?
+  net_rating    Float?
+  oreb_pct      Float?
+  dreb_pct      Float?
+  usg_pct       Float?
+  ts_pct        Float?
+  ast_pct       Float?
+}
