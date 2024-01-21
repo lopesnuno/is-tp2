@@ -6,3 +6,5 @@ pandas==2.1.4
 flask==3.0.0
 flask-magql==1.0.0
 geopy==2.4.1
+psycopg2-binary==2.9.9
+xmlschema==2.5.0

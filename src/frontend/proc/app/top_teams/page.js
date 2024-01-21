@@ -51,7 +51,12 @@ function TopTeams() {
     return (
         <>
             <Container maxWidth="100%"
-                       sx={{backgroundColor: "white", padding: "2rem", borderRadius: "1rem", border: "solid thin black" }}>
+                       sx={{
+                           backgroundColor: "white",
+                           padding: "2rem",
+                           borderRadius: "1rem",
+                           border: "solid thin black"
+                       }}>
                 <Box>
                     <h2 style={{fontSize: "1.5rem", marginBottom: "1rem"}}>Options</h2>
                     <FormControl fullWidth>
@@ -104,8 +109,8 @@ function TopTeams() {
                         </ul> :
                         selectedCountry ? <CircularProgress/> : "--"
                 }
-                </Container>
-            </>
+            </Container>
+        </>
     );
 }
 
