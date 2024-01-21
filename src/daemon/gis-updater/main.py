@@ -3,52 +3,88 @@ import os
 import time
 import xml.etree.ElementTree as ET
 from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut
+import psycopg2
+from psycopg2 import OperationalError
 
 POLLING_FREQ = int(sys.argv[1]) if len(sys.argv) >= 2 else 60
-ENTITIES_PER_ITERATION = int(sys.argv[2]) if len(sys.argv) >= 3 else 10
+ENTITIES_PER_ITERATION = int(sys.argv[2]) if len(sys.argv) >= 3 else 5
 XML_PATH = "/xml"
 
 geolocator = Nominatim(user_agent="is-tp2")
 
 
-def get_colleges(xml_path, max_iterations):
-    college_names = set()
-
-    for file in os.listdir(xml_path):
-        if file.endswith(".xml"):
-            file_path = os.path.join(xml_path, file)
-
-            tree = ET.parse(file_path)
-            root = tree.getroot()
-
-            elements = root.findall(".//College")
-            for el in elements:
-                name = el.find("name").text.strip()
-                college_names.add(name)
-
-    return list(college_names)
+def get_colleges():
+    global connection, cursor
+    try:
+        connection = psycopg2.connect(host='db-rel', database='is', user='is', password='is')
+        cursor = connection.cursor()
+        query = '''SELECT id, name FROM public.colleges WHERE geom IS NULL'''
+        cursor.execute(query)
+        results = cursor.fetchall()
+        return results
+    except (Exception, psycopg2.Error) as error:
+        return f"Error: {error}"
+    finally:
+        cursor.close()
+        connection.close()
 
 
-def get_coordinates_by_college_name(name):
-    location = geolocator.geocode(name)
-    if location:
-        return location.latitude, location.longitude
-    else:
-        return None
+# !TODO: 3- Submit the changes
+def update_college(college_id, latitude, longitude):
+    global connection, cursor
+    try:
+        connection = psycopg2.connect(host='db-rel', database='is', user='is', password='is')
+        cursor = connection.cursor()
+        query = '''UPDATE public.colleges SET latitude = %s, longitude = %s, geom = ST_SetSRID(ST_MakePoint(%s, %s), 4326) WHERE id = %s'''
+        cursor.execute(query, (latitude, longitude, latitude, longitude, college_id))
+        connection.commit()
+    except OperationalError as error:
+        return f"Error: {error}"
+    finally:
+        cursor.close()
+        connection.close()
+
+
+# !TODO: 2- Use the entity information to retrieve coordinates from an external API
+def get_coordinates_by_college_name(name, attempt=1, max_attempts=10):
+    try:
+        location = geolocator.geocode(name)
+        if location:
+            return location.latitude, location.longitude
+        else:
+            return None
+    except GeocoderTimedOut:
+        if attempt <= max_attempts:
+            print(f"Recursive run: {attempt}/{max_attempts}")
+            time.sleep(10)
+            return get_coordinates_by_college_name(name, attempt=attempt+1)
+
+        other_colleges = get_colleges()
+        return process_colleges_in_pieces(other_colleges)
+
+
+def process_colleges_in_pieces(colleges, size=ENTITIES_PER_ITERATION):
+    num_colleges = len(colleges)
+
+    for i in range(0, num_colleges, size):
+        print(f"Getting up to {ENTITIES_PER_ITERATION} entities without coordinates...")
+        piece = colleges[i:i + size]
+        for college in piece:
+            geo = get_coordinates_by_college_name(college[1])
+            if geo is not None:
+                update_college(college[0], geo[0], geo[1])
+                time.sleep(1.3)
+        print(f"{ENTITIES_PER_ITERATION} colleges updated...")
+
+    return
 
 
 if __name__ == "__main__":
 
     while True:
-        print(f"Getting up to {ENTITIES_PER_ITERATION} entities without coordinates...")
-        # !TODO: 1- Use api-gis to retrieve a fixed amount of entities without coordinates (e.g. 100 entities per iteration, use ENTITIES_PER_ITERATION)
-        colleges = get_colleges(XML_PATH, ENTITIES_PER_ITERATION)
-        # !TODO: 2- Use the entity information to retrieve coordinates from an external API
-        for college in colleges:
-            geo = get_coordinates_by_college_name(college)
-            print(college, ' -> ', geo)
-        # !TODO: 3- Submit the changes
-
-        #update ja na base de dados relacional
+        colleges = get_colleges()
+        process_colleges_in_pieces(colleges)
+        time.sleep(POLLING_FREQ)
 
 

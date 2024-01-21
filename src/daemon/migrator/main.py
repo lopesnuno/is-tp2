@@ -16,6 +16,44 @@ def check_updates(cursor, last_check):
     else:
         return None
 
+
+def check_college_on_db(college):
+    global connection, cursor
+    try:
+        connection = psycopg2.connect(host='db-rel', database='is', user='is', password='is')
+        cursor = connection.cursor()
+        query = '''SELECT count(*) from colleges where name=%s'''
+        cursor.execute(query, (college,))
+        results = cursor.fetchall()
+        return results
+    except OperationalError as error:
+        return print_psycopg2_exception(error)
+    finally:
+        cursor.close()
+        connection.close()
+
+
+def insert_college(college):
+    global connection, cursor
+    try:
+        connection = psycopg2.connect(host='db-rel', database='is', user='is', password='is')
+        cursor = connection.cursor()
+        college_exists = check_college_on_db(college)
+        if college_exists != 0:
+            query = '''INSERT INTO public.colleges(name) VALUES(%s) '''
+            cursor.execute(query, (college,))
+            connection.commit()
+            return "College added successfully."
+        else:
+            return "College already exists."
+    except (Exception, psycopg2.Error) as error:
+        print_psycopg2_exception(error)
+        return "Error inserting colleges."
+    finally:
+        cursor.close()
+        connection.close()
+
+
 def print_psycopg2_exception(ex):
     # get details about the exception
     err_type, err_obj, traceback = sys.exc_info()
@@ -76,6 +114,8 @@ if __name__ == "__main__":
                                         if name not in unique_colleges:
                                             unique_colleges.add(name)
 
+                                for name in unique_colleges:
+                                    insert_college(name)
 
                             except ET.ParseError as e:
                                 print("Error parsing XML data:", e)
@@ -90,8 +130,6 @@ if __name__ == "__main__":
 
         except OperationalError as err:
             print_psycopg2_exception(err)
-        finally:
-            db_org.close()
 
 
         # !TODO: 3- Execute INSERT queries in the destination db

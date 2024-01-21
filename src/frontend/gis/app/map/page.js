@@ -6,7 +6,7 @@ import ObjectMarkersGroup from "./ObjectMarkersGroup";
 function Page() {
     return (
         <MapContainer style={{width: "100%", height: "calc(100vh - 64px)"}}
-                      center={[41.69462, -8.84679]}
+                      center={[33.5206824, -86.8024326]}
                       zoom={17}
                       scrollWheelZoom={false}
         >
@@ -19,3 +19,9 @@ function Page() {
 }
 
 export default Page;
+
+
+
+
+
+
