@@ -47,16 +47,27 @@ class CSVHandler(FileSystemEventHandler):
         reader = CSVReader(csv_path)
         reader.split_files('out_split')
 
-        for i in range(4):
-            split_csv_path = os.path.join('/csv', f'out_split_{i}.csv')
-            if os.path.exists(split_csv_path):
-                xml_path = generate_unique_file_name(self._output_path)
+        while True:
+            split_csv_files = [f for f in os.listdir('/csv') if f.startswith('out_split_') and f.endswith('.csv')]
 
-                convert_csv_to_xml(split_csv_path, xml_path)
+            if not split_csv_files:
+                print("Waiting for more files...")
+                time.sleep(5)
+                continue
 
-                storeFile_converted_documents(split_csv_path, xml_path)
-                print(f"new xml file generated: '{xml_path}'")
-                storeFile_imported_documents(file_path=xml_path)
+            for split_csv_file in split_csv_files:
+                split_csv_path = os.path.join('/csv', split_csv_file)
+                if os.path.exists(split_csv_path):
+                    xml_path = generate_unique_file_name(self._output_path)
+
+                    convert_csv_to_xml(split_csv_path, xml_path)
+
+                    storeFile_converted_documents(split_csv_path, xml_path)
+                    print(f"new xml file generated: '{xml_path}'")
+                    storeFile_imported_documents(file_path=xml_path)
+
+                    os.remove(split_csv_path)
+                    print(f"split csv file deleted: '{split_csv_path}'")
 
 
     async def get_converted_files(self):
