@@ -1,8 +1,7 @@
 'use client'
-import React, {useEffect, useState} from 'react';
-import {LayerGroup, useMap} from 'react-leaflet';
-import {ObjectMarker} from './ObjectMarker';
-
+import React, { useEffect, useState } from 'react';
+import { LayerGroup, useMap } from 'react-leaflet';
+import { ObjectMarker } from './ObjectMarker';
 
 function ObjectMarkersGroup() {
   const map = useMap();
@@ -22,7 +21,7 @@ function ObjectMarkersGroup() {
         console.log('API call successful');
       } catch (error) {
         console.error('Error fetching data:', error);
-      }x
+      }
     };
     fetchData();
   }, []);
@@ -45,11 +44,25 @@ function ObjectMarkersGroup() {
     }
   }, [data, bounds]);
 
+  const handleMarkerDragEnd = (id, newLatLng) => {
+    // Update the object's position in the state or make an API call to update the server.
+    console.log(`Object with ID ${id} dragged to:`, newLatLng);
+  };
+
   return (
     <LayerGroup>
       {Array.isArray(geom) &&
         geom.map((geoJSON) => (
-          <ObjectMarker key={geoJSON.properties.id} geoJSON={geoJSON} />
+          <ObjectMarker
+            key={geoJSON.properties.id}
+            geoJSON={geoJSON}
+            draggable={true}
+            onDragend={(e) => {
+              const { id } = geoJSON.properties;
+              const { lat, lng } = e.target.getLatLng();
+              handleMarkerDragEnd(id, { lat, lng });
+            }}
+          />
         ))}
     </LayerGroup>
   );
