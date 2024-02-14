@@ -179,11 +179,11 @@ services:
       API_PORT: ${API_PORT}
 
   # Container that runs a golang exmaple
-  golang-example:
+  watcher:
     container_name: golang-example
     build: docker/images/golang
     volumes:
-      - ./src/examples/golang:/usr/src/app
+      - ./src/daemon/watcher:/usr/src/app
       - ./docker/volumes/xml:/xml
     environment:
       USE_DEV_MODE: ${USE_DEV_MODE}
