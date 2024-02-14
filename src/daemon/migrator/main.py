@@ -285,6 +285,8 @@ if __name__ == "__main__":
 
         last_check = '2024-01-19 00:00:00'
 
+
+        # add check to RabbitMQ message
         try:
             with db_org.cursor() as cursor:
                 while last_check:
