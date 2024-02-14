@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+
 func listXMLFiles() {
 	files, err := ioutil.ReadDir("/xml")
 	if err != nil {
@@ -20,6 +21,10 @@ func listXMLFiles() {
 	}
 }
 
+func watchDirectory(){
+
+}
+
 func main() {
-	listXMLFiles()
+	watchDirectory()
 }
