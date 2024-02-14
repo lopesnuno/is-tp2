@@ -39,6 +39,7 @@ def get_players(root):
 
     return players
 
+
 def check_updates(cursor, last_check):
     query = f"SELECT * FROM imported_documents WHERE updated_on > %s OR created_on > %s;"
     cursor.execute(query, (last_check, last_check))
