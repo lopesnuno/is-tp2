@@ -3,46 +3,48 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"strings",
-	"log",
-	"strings",
-	"time",
+	"log"
+	"strings"
+	"time"
+
 	"github.com/streadway/amqp"
 )
 
-const rabbitMqUrl = "amqp://is:is@rabbitmq:5672/is"
+const rabbitMQURL = "amqp://is:is@rabbitmq:5672/is"
 
-func listXMLFiles() {
+var trackedFiles = make(map[string]struct{})
+
+func listXMLFiles() []string {
 	files, err := ioutil.ReadDir("/xml")
 	if err != nil {
 		fmt.Printf("Error accessing /xml: %s\n", err)
 		return nil
 	}
 
-    xmlFiles := [];
+	xmlFiles := []string{}
 	for _, f := range files {
 		if strings.HasSuffix(f.Name(), ".xml") {
-		    xmlFiles = append(xmlFiles, f.Name())
+			xmlFiles = append(xmlFiles, f.Name())
 		}
 	}
 
-	return xmlFiles;
+	return xmlFiles
 }
 
 func sendMessageToRabbitMQ(message string) error {
-    conn, err := amqp.Dial(rabbitMQURL)
+	conn, err := amqp.Dial(rabbitMQURL)
 	if err != nil {
-		return fmt.Error("Failed to connect to RabbitMQ: %s", err)
+		return fmt.Errorf("Failed to connect to RabbitMQ: %s", err)
 	}
 	defer conn.Close()
 
 	ch, err := conn.Channel()
 	if err != nil {
-		return fmt.Error("Failed to open a channel: %s", err)
+		return fmt.Errorf("Failed to open a channel: %s", err)
 	}
 	defer ch.Close()
 
-    q, err := ch.QueueDeclare(
+	q, err := ch.QueueDeclare(
 		"migration",
 		false,
 		false,
@@ -52,7 +54,7 @@ func sendMessageToRabbitMQ(message string) error {
 	)
 
 	if err != nil {
-		return fmt.Error("Failed to declare a queue: %s", err)
+		return fmt.Errorf("Failed to declare a queue: %s", err)
 	}
 
 	err = ch.Publish(
@@ -65,28 +67,36 @@ func sendMessageToRabbitMQ(message string) error {
 			Body:        []byte(message),
 		})
 	if err != nil {
-		return fmt.Error("Failed to publish a message: %s", err)
+		return fmt.Errorf("Failed to publish a message: %s", err)
 	}
 
 	return nil
 }
 
-func watchDirectory(){
-    for {
-        xmlFiles := listXMLFiles()
+func watchDirectory() {
+	for {
+		xmlFiles := listXMLFiles()
 
-        if len(xmlFiles) > 0 {
-            message := fmt.Sprintf("New XML files found: %v", xmlFiles);
-            fmt.Println(message)
+		// Check for new files
+		newFiles := []string{}
+		for _, file := range xmlFiles {
+			if _, tracked := trackedFiles[file]; !tracked {
+				newFiles = append(newFiles, file)
+				trackedFiles[file] = struct{}{}
 
-            err := sendMessageToRabbitMQ(message);
-            if err != nil {
-                log.Printf("Error sending message to RabbitMQ: %s", err)
-            }
-        }
+				// Send a separate message for each new file
+				message := fmt.Sprintf("New XML file found: %s", file)
+				fmt.Println(message)
 
-        time.Sleep(5 * time.Second)
-    }
+				err := sendMessageToRabbitMQ(message)
+				if err != nil {
+					log.Printf("Error sending message to RabbitMQ: %s", err)
+				}
+			}
+		}
+
+		time.Sleep(5 * time.Second)
+	}
 }
 
 func main() {
