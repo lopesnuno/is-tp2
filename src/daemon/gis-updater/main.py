@@ -1,6 +1,7 @@
 import sys
 import os
 import time
+import pika
 import xml.etree.ElementTree as ET
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut
@@ -82,9 +83,25 @@ def process_colleges_in_pieces(colleges, size=ENTITIES_PER_ITERATION):
 
 if __name__ == "__main__":
 
-    while True:
+    rabbitMqUrl = "amqp://is:is@rabbitmq:5672/is"
+    queue_name = "gis_updater"
+
+    connection_params = pika.URLParameters(rabbitMqUrl)
+    connection = pika.BlockingConnection(connection_params)
+    channel = connection.channel()
+
+
+    def callback(ch, method, properties, body):
+        message = body.decode('utf-8')
+        print(f"{message}")
         colleges = get_colleges()
         process_colleges_in_pieces(colleges)
         time.sleep(POLLING_FREQ)
+
+
+    channel.basic_consume(queue='gis_updater', on_message_callback=callback, auto_ack=True)
+    print('Waiting to start GIS updater...')
+    channel.start_consuming()
+
 
 
