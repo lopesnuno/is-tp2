@@ -45,8 +45,8 @@ func sendMessageToRabbitMQ(message string) error {
 	defer ch.Close()
 
 	q, err := ch.QueueDeclare(
-		"migration",
-		false,
+		"migrator",
+		true,
 		false,
 		false,
 		false,
@@ -77,15 +77,13 @@ func watchDirectory() {
 	for {
 		xmlFiles := listXMLFiles()
 
-		// Check for new files
 		newFiles := []string{}
 		for _, file := range xmlFiles {
 			if _, tracked := trackedFiles[file]; !tracked {
 				newFiles = append(newFiles, file)
 				trackedFiles[file] = struct{}{}
 
-				// Send a separate message for each new file
-				message := fmt.Sprintf("New XML file found: %s", file)
+				message := fmt.Sprintf("%s", file)
 				fmt.Println(message)
 
 				err := sendMessageToRabbitMQ(message)
