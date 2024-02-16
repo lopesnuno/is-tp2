@@ -2,6 +2,7 @@ import sys
 import time
 import uuid
 from psycopg2 import extras
+import pika
 import psycopg2
 from psycopg2 import OperationalError
 import xml.etree.ElementTree as ET
@@ -40,9 +41,84 @@ def get_players(root):
     return players
 
 
-def check_updates(cursor, last_check):
-    query = f"SELECT * FROM imported_documents WHERE updated_on > %s OR created_on > %s;"
-    cursor.execute(query, (last_check, last_check))
+def import_data_to_db_rel(db_org, file_name):
+    try:
+        with db_org.cursor() as cursor:
+            results = check_updates(cursor, file_name)
+            if results is not None:
+                unique_colleges = set()
+                for row in results:
+                    xml_data = row[2]
+                    try:
+                        root = ET.fromstring(xml_data)
+                        colleges = [college.find("College/name").text for college in root.findall(".//Player")]
+                        seasons = [season.get("season") for season in root.findall(".//Season")]
+                        players = get_players(root)
+                        # !TODO: 2 - Retreive info that will be added in db-rel
+                        for name in colleges:
+                            if name is not None:
+                                if name not in unique_colleges:
+                                    unique_colleges.add(name)
+
+                        for name in unique_colleges:
+                            insert_college(name)
+
+                        for season in seasons:
+                            insert_season(season)
+
+                        for player in players:
+                            insert_player(player)
+                            insert_player_season(player)
+                            # spid = select_season_player_id(player)
+                            # print(spid[0])
+                            # insert_stats(player, spid[0])
+
+                    except ET.ParseError as e:
+                        print("Error parsing XML data:", e)
+
+                time.sleep(1)
+
+            else:
+                print('No results.')
+
+            time.sleep(POLLING_FREQ)
+
+    except OperationalError as err:
+        print_psycopg2_exception(err)
+
+
+def check_updates_with_queue(rabbit_url, queue_name, db_org):
+    connection_params = pika.URLParameters(rabbit_url)
+    connection = pika.BlockingConnection(connection_params)
+    channel = connection.channel()
+
+    def callback(ch, method, properties, body):
+        file_name = body.decode('utf-8')
+        print(f"Received new file: {file_name}")
+        import_data_to_db_rel(db_org, file_name)
+        send_message_to_gis_updater(rabbit_url, "Start GIS updater...")
+
+    channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
+
+    print('Waiting for new messages. To exit, press CTRL+C')
+    channel.start_consuming()
+
+
+def send_message_to_gis_updater(rabbit_url, message):
+    connection_params = pika.URLParameters(rabbit_url)
+    connection = pika.BlockingConnection(connection_params)
+    channel = connection.channel()
+
+    channel.basic_publish(exchange='', routing_key='gis_updater', body=message)
+
+    connection.close()
+
+
+def check_updates(cursor, file_name):
+
+    file = f"/xml/{file_name}"
+    query = f"SELECT * FROM imported_documents WHERE file_name like %s;"
+    cursor.execute(query, (file, ))
     data = cursor.fetchall()
     if data:
         return data
@@ -69,7 +145,7 @@ def insert_college(college):
         connection = psycopg2.connect(host='db-rel', database='is', user='is', password='is')
         cursor = connection.cursor()
         college_exists = check_college_on_db(college)
-        if college_exists != 0 :
+        if college_exists != 0:
             query = '''INSERT INTO public.colleges(name) VALUES(%s) '''
             cursor.execute(query, (college,))
             connection.commit()
@@ -105,15 +181,17 @@ def insert_player(player):
             if player['draft_year'] == 'Undrafted':
                 query = '''INSERT INTO public.players(name, country, height, weight, college_id, draft_year, draft_round, draft_number) VALUES(%s, %s, %s, %s, %s, %s, %s, %s) '''
                 cursor.execute(query, (
-                player['name'], player['country'], player['height'], player['weight'], college_id, 'Undrafted', 'Undrafted',
-                'Undrafted'))
+                    player['name'], player['country'], player['height'], player['weight'], college_id, 'Undrafted',
+                    'Undrafted',
+                    'Undrafted'))
                 connection.commit()
                 return "College added successfully."
             else:
                 query = '''INSERT INTO public.players(name, country, height, weight, college_id, draft_year, draft_round, draft_number) VALUES(%s, %s, %s, %s, %s, %s, %s, %s) '''
                 cursor.execute(query, (
-                player['name'], player['country'], player['height'], player['weight'], college_id, player['draft_year'],
-                player['draft_round'], player['draft_number']))
+                    player['name'], player['country'], player['height'], player['weight'], college_id,
+                    player['draft_year'],
+                    player['draft_round'], player['draft_number']))
                 connection.commit()
                 return "Player added successfully."
         else:
@@ -153,16 +231,16 @@ def insert_stats(player, spid):
             query = '''INSERT INTO public.stats(season_player, gp, pts, reb, ast, net_rating, oreb_pct, dreb_pct, usg_pct, ts_pct, ast_pct) 
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'''
             cursor.execute(
-                query,(spid,player['stats']['gp'],player['stats']['pts'],
-                    player['stats']['reb'],
-                    player['stats']['ast'],
-                    player['stats']['net_rating'],
-                    player['stats']['oreb_pct'],
-                    player['stats']['dreb_pct'],
-                    player['stats']['usg_pct'],
-                    player['stats']['ts_pct'],
-                    player['stats']['ast_pct'],
-                )
+                query, (spid, player['stats']['gp'], player['stats']['pts'],
+                        player['stats']['reb'],
+                        player['stats']['ast'],
+                        player['stats']['net_rating'],
+                        player['stats']['oreb_pct'],
+                        player['stats']['dreb_pct'],
+                        player['stats']['usg_pct'],
+                        player['stats']['ts_pct'],
+                        player['stats']['ast_pct'],
+                        )
             )
             connection.commit()
             return "Stats added successfully."
@@ -229,6 +307,7 @@ def check_season_exists(season):
         print_psycopg2_exception(error)
         return "Error counting seasons"
 
+
 def check_player_exists(name):
     global connection, cursor
     try:
@@ -267,6 +346,9 @@ if __name__ == "__main__":
     db_org = psycopg2.connect(host='db-xml', database='is', user='is', password='is')
     db_dst = psycopg2.connect(host='db-rel', database='is', user='is', password='is')
 
+    rabbitMqUrl = "amqp://is:is@rabbitmq:5672/is"
+    queue_name = "migrator"
+
     while True:
 
         # Connect to both databases
@@ -282,57 +364,7 @@ if __name__ == "__main__":
         if db_org is None or db_dst is None:
             sys.exit("Failed to connect to the database.")
 
-        # !TODO: 1- Execute a SELECT query to check for any changes on the table
-
-        last_check = '2024-01-19 00:00:00'
-
-
-        # add check to RabbitMQ message
-        try:
-            with db_org.cursor() as cursor:
-                while last_check:
-                    results = check_updates(cursor, last_check)
-                    if results is not None:
-                        unique_colleges = set()
-                        for row in results:
-                            xml_data = row[2]
-                            try:
-                                root = ET.fromstring(xml_data)
-                                colleges = [college.find("College/name").text for college in root.findall(".//Player")]
-                                seasons = [season.get("season") for season in root.findall(".//Season")]
-                                players = get_players(root)
-                                # !TODO: 2 - Retreive info that will be added in db-rel
-                                for name in colleges:
-                                    if name is not None:
-                                        if name not in unique_colleges:
-                                            unique_colleges.add(name)
-
-                                for name in unique_colleges:
-                                    insert_college(name)
-
-                                for season in seasons:
-                                    insert_season(season)
-
-                                for player in players:
-                                    insert_player(player)
-                                    insert_player_season(player)
-                                    #spid = select_season_player_id(player)
-                                    #print(spid[0])
-                                    #insert_stats(player, spid[0])
-
-                            except ET.ParseError as e:
-                                print("Error parsing XML data:", e)
-
-                        time.sleep(1)
-
-                    else:
-                        print('No results.')
-
-                    last_check = time.strftime('%Y-%m-%d %H:%M:%S')
-                    time.sleep(POLLING_FREQ)
-
-        except OperationalError as err:
-            print_psycopg2_exception(err)
+        check_updates_with_queue(rabbitMqUrl, queue_name, db_org)
 
         db_org.close()
         db_dst.close()
