@@ -100,7 +100,7 @@ def check_updates_with_queue(rabbit_url, queue_name, db_org):
 
     channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
 
-    print('Waiting for new messages. To exit, press CTRL+C')
+    print('Waiting for new messages...')
     channel.start_consuming()
 
 
